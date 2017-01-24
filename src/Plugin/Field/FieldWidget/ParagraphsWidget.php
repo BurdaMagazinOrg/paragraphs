@@ -683,25 +683,26 @@ class ParagraphsWidget extends WidgetBase {
             'class' => [
               'paragraph-type-add-modal-button',
               'button--small',
-              'js-show'
+              'js-show',
             ],
           ],
           '#ajax' => [
             'url' => Url::fromRoute(
               'paragraphs.paragraphs_modal_controller', [
                 'field_config' => implode('.', [
-                  $items->getEntity()
-                    ->getEntityTypeId(),
+                  $items->getEntity()->getEntityTypeId(),
                   $items->getEntity()->bundle(),
-                  $this->fieldDefinition->getName()
+                  $this->fieldDefinition->getName(),
                 ]),
                 'uuid' => $this->uuid,
                 'id_prefix' => $id_prefix,
+                'position' => $element['#weight'],
               ]
             ),
           ],
         ];
         $element['#attached']['library'][] = 'paragraphs/drupal.paragraphs.modal';
+
       }
 
       static::setWidgetState($parents, $field_name, $form_state, $widget_state);

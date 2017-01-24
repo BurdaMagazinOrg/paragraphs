@@ -18,7 +18,6 @@ drupal.paragraphs.widget:
       css/paragraphs.widget.css: {}
 
 drupal.paragraphs.modal:
-  version: VERSION
   js:
     js/paragraphs.modal.js: {}
   dependencies:

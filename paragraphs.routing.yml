@@ -31,7 +31,7 @@ entity.paragraphs_type.delete_form:
     _permission: 'administer paragraphs types'
 
 paragraphs.paragraphs_modal_controller:
-  path: '/paragraphs/{field_config}/{id_prefix}/{uuid}'
+  path: '/paragraphs/{field_config}/{id_prefix}/{uuid}/{position}'
   defaults:
     _controller: '\Drupal\paragraphs\Controller\ParagraphsModalController::paragraphsSelect'
     _title: 'Select a paragraph type'
@@ -43,3 +43,7 @@ paragraphs.paragraphs_modal_controller:
           type: entity:field_config
         id_prefix:
           type: string
+        uuid:
+          type: string
+        position:
+          type: int

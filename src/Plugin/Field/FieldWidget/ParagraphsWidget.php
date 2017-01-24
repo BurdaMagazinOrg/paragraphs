@@ -229,7 +229,6 @@ class ParagraphsWidget extends WidgetBase {
     $host = $items->getEntity();
     $widget_state = static::getWidgetState($parents, $field_name, $form_state);
 
-    $entity_manager = \Drupal::entityTypeManager();
     $target_type = $this->getFieldSetting('target_type');
 
     $item_mode = isset($widget_state['paragraphs'][$delta]['mode']) ? $widget_state['paragraphs'][$delta]['mode'] : 'edit';
@@ -256,17 +255,6 @@ class ParagraphsWidget extends WidgetBase {
           $item_mode = 'preview';
         }
       }
-    }
-    elseif (isset($widget_state['selected_bundle'])) {
-
-      $entity_type = $entity_manager->getDefinition($target_type);
-      $bundle_key = $entity_type->getKey('bundle');
-
-      $paragraphs_entity = $entity_manager->getStorage($target_type)->create(array(
-        $bundle_key => $widget_state['selected_bundle'],
-      ));
-
-      $item_mode = 'edit';
     }
 
     if ($item_mode == 'collapsed') {
@@ -1067,6 +1055,12 @@ class ParagraphsWidget extends WidgetBase {
   protected function buildSelectAddMode() {
     $field_name = $this->fieldDefinition->getName();
     $title = $this->fieldDefinition->getLabel();
+
+    $add_more_elements['add_more_delta'] = [
+      '#type' => 'hidden',
+      '#title' => 'Delta',
+    ];
+
     $add_more_elements['add_more_select'] = [
       '#type' => 'select',
       '#options' => $this->getAccessibleOptions(),
@@ -1130,14 +1124,48 @@ class ParagraphsWidget extends WidgetBase {
 
     if ($widget_state['real_item_count'] < $element['#cardinality'] || $element['#cardinality'] == FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED) {
       $widget_state['items_count']++;
+      $widget_state['real_item_count']++;
     }
 
+    $position = $widget_state['real_item_count'] - 1;
     if (isset($button['#bundle_machine_name'])) {
       $widget_state['selected_bundle'] = $button['#bundle_machine_name'];
     }
     else {
       $widget_state['selected_bundle'] = $element['add_more']['add_more_select']['#value'];
+      if ($element['add_more']['add_more_delta']['#value'] !== "") {
+        $position = $element['add_more']['add_more_delta']['#value'];
+      }
     }
+
+    // Create new paragraph entity.
+    $entity_type = \Drupal::entityManager()->getDefinition('paragraph');
+    $bundle_key = $entity_type->getKey('bundle');
+
+    $paragraphs_entity = \Drupal::entityManager()->getStorage('paragraph')->create(array(
+      $bundle_key => $widget_state['selected_bundle'],
+    ));
+
+    $paragraph[] = [
+      'entity' => $paragraphs_entity,
+      'display' => $widget_state['paragraphs'][$position]['display'],
+      'mode' => 'edit'
+    ];
+
+    if ($widget_state['paragraphs']) {
+      array_splice($widget_state['paragraphs'], $position, 0, $paragraph);
+    } else {
+      $widget_state['paragraphs'] = $paragraph;
+    }
+
+    // Clean form_state.
+    $user_input = $form_state->getUserInput();
+    unset($user_input['field_paragraphs'][$position]);
+    for ($delta = $position; $delta < $widget_state['items_count'] - 1; $delta++) {
+      $user_input['field_paragraphs'][$delta + 1] = $form_state->getUserInput()['field_paragraphs'][$delta];
+      $user_input['field_paragraphs'][$delta + 1]['_weight']++;
+    }
+    $form_state->setUserInput($user_input);
 
     static::setWidgetState($parents, $field_name, $form_state, $widget_state);
 

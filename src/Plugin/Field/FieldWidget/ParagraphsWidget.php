@@ -13,6 +13,7 @@ use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Url;
 use Drupal\paragraphs;
 
 /**
@@ -127,7 +128,8 @@ class ParagraphsWidget extends WidgetBase {
       '#options' => array(
         'select' => $this->t('Select list'),
         'button' => $this->t('Buttons'),
-        'dropdown' => $this->t('Dropdown button')
+        'dropdown' => $this->t('Dropdown button'),
+        'modal' => $this->t('Modal form'),
       ),
       '#default_value' => $this->getSetting('add_mode'),
       '#required' => TRUE,
@@ -192,6 +194,9 @@ class ParagraphsWidget extends WidgetBase {
         break;
       case 'dropdown':
         $add_mode = $this->t('Dropdown button');
+        break;
+      case 'modal':
+        $add_mode = $this->t('Modal form');
         break;
     }
 
@@ -655,6 +660,49 @@ class ParagraphsWidget extends WidgetBase {
       $widget_state['paragraphs'][$delta]['entity'] = $paragraphs_entity;
       $widget_state['paragraphs'][$delta]['display'] = $display;
       $widget_state['paragraphs'][$delta]['mode'] = $item_mode;
+
+      if ($this->getSetting('add_mode') == 'modal') {
+        if (empty($this->uuid)) {
+          $this->uuid = \Drupal::service('uuid')->generate();
+        }
+        $element['area'] = [
+          '#type' => 'container',
+          '#attributes' => [
+            'class' => [
+              'paragraph-type-add-modal',
+            ],
+          ],
+          '#access' => !$this->isTranslating,
+        ];
+
+        $element['area']['add_more'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('+ Add'),
+          '#name' => strtr($id_prefix, '-', '_') . '_add_modal',
+          '#attributes' => [
+            'class' => [
+              'paragraph-type-add-modal-button',
+              'button--small',
+              'js-show'
+            ],
+          ],
+          '#ajax' => [
+            'url' => Url::fromRoute(
+              'paragraphs.paragraphs_modal_controller', [
+                'field_config' => implode('.', [
+                  $items->getEntity()
+                    ->getEntityTypeId(),
+                  $items->getEntity()->bundle(),
+                  $this->fieldDefinition->getName()
+                ]),
+                'uuid' => $this->uuid,
+                'id_prefix' => $id_prefix,
+              ]
+            ),
+          ],
+        ];
+        $element['#attached']['library'][] = 'paragraphs/drupal.paragraphs.modal';
+      }
 
       static::setWidgetState($parents, $field_name, $form_state, $widget_state);
     }

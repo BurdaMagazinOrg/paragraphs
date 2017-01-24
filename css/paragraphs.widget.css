@@ -108,6 +108,23 @@
   box-shadow: none;
 }
 
+.js .paragraph-type-add-modal {
+  width: 100%;
+  padding: 10px 0;
+  text-align: center;
+  margin-bottom: -3em;
+  height: 30px;
+}
+
+.js .paragraph-type-add-modal-button {
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.js .paragraph-type-add-modal-button:hover {
+  color: #ffffff;
+  background: #057ec7 none;
+}
 
 /* Override 600px breakpoint core submit button tweaks. */
 @media screen and (max-width: 600px) {

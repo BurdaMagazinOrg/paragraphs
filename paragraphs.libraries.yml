@@ -16,3 +16,13 @@ drupal.paragraphs.widget:
   css:
     theme:
       css/paragraphs.widget.css: {}
+
+drupal.paragraphs.modal:
+  version: VERSION
+  js:
+    js/paragraphs.modal.js: {}
+  dependencies:
+    - core/drupal.dialog.ajax
+    - core/jquery.once
+    - core/jquery.ui.tabs
+    - core/drupal

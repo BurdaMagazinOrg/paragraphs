@@ -4,6 +4,7 @@ namespace Drupal\paragraphs\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\RevisionableInterface;
@@ -1173,15 +1174,26 @@ class ParagraphsWidget extends WidgetBase {
 
     if ($widget_state['paragraphs']) {
       array_splice($widget_state['paragraphs'], $position, 0, $paragraph);
-    } else {
+    }
+    else {
       $widget_state['paragraphs'] = $paragraph;
     }
 
+    $sorting = function ($a, $b) {
+      return SortArray::sortByKeyInt($a, $b, '_weight');
+    };
+
     // Clean form_state.
-    $user_input = $form_state->getUserInput();
+    $user_input = $user_input_save = $form_state->getUserInput();
+
+    unset($user_input['field_paragraphs']['add_more']);
+    usort($user_input['field_paragraphs'], $sorting);
+    $user_input['field_paragraphs']['add_more'] = $user_input_save['field_paragraphs'];
+    $user_input_save = $user_input;
+
     unset($user_input['field_paragraphs'][$position]);
     for ($delta = $position; $delta < $widget_state['items_count'] - 1; $delta++) {
-      $user_input['field_paragraphs'][$delta + 1] = $form_state->getUserInput()['field_paragraphs'][$delta];
+      $user_input['field_paragraphs'][$delta + 1] = $user_input_save['field_paragraphs'][$delta];
       $user_input['field_paragraphs'][$delta + 1]['_weight']++;
     }
     $form_state->setUserInput($user_input);

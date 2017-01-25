@@ -650,47 +650,10 @@ class ParagraphsWidget extends WidgetBase {
       $widget_state['paragraphs'][$delta]['mode'] = $item_mode;
 
       if ($this->getSetting('add_mode') == 'modal') {
-        if (empty($this->uuid)) {
-          $this->uuid = \Drupal::service('uuid')->generate();
+        if ($delta == 0) {
+          $this->buildInBetweenAddButton($element, $id_prefix, $items, FALSE);
         }
-        $element['area'] = [
-          '#type' => 'container',
-          '#attributes' => [
-            'class' => [
-              'paragraph-type-add-modal',
-            ],
-          ],
-          '#access' => !$this->isTranslating,
-        ];
-
-        $element['area']['add_more'] = [
-          '#type' => 'submit',
-          '#value' => $this->t('+ Add'),
-          '#name' => strtr($id_prefix, '-', '_') . '_add_modal',
-          '#attributes' => [
-            'class' => [
-              'paragraph-type-add-modal-button',
-              'button--small',
-              'js-show',
-            ],
-          ],
-          '#ajax' => [
-            'url' => Url::fromRoute(
-              'paragraphs.paragraphs_modal_controller', [
-                'field_config' => implode('.', [
-                  $items->getEntity()->getEntityTypeId(),
-                  $items->getEntity()->bundle(),
-                  $this->fieldDefinition->getName(),
-                ]),
-                'uuid' => $this->uuid,
-                'id_prefix' => $id_prefix,
-                'position' => $element['#weight'],
-              ]
-            ),
-          ],
-        ];
-        $element['#attached']['library'][] = 'paragraphs/drupal.paragraphs.modal';
-
+        $this->buildInBetweenAddButton($element, $id_prefix, $items);
       }
 
       static::setWidgetState($parents, $field_name, $form_state, $widget_state);
@@ -700,6 +663,71 @@ class ParagraphsWidget extends WidgetBase {
     }
 
     return $element;
+  }
+
+  /**
+   * Builds an add paragraph button betwenn paragraphs.
+   *
+   * @param array $element
+   *   Render element.
+   * @param string $id_prefix
+   *   Prefix.
+   * @param FieldItemListInterface $items
+   *   The paragraphs items.
+   * @param bool $end
+   *   Is add button before or after the paragraph element.
+   */
+  protected function buildInBetweenAddButton(array &$element, $id_prefix, FieldItemListInterface $items, $end = TRUE) {
+    if (empty($this->uuid)) {
+      $this->uuid = \Drupal::service('uuid')->generate();
+    }
+
+    if (!$end) {
+      $id_prefix .= '_beginning';
+    }
+
+    $element[$id_prefix . '_area'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => [
+          'paragraph-type-add-modal',
+        ],
+      ],
+      '#access' => !$this->isTranslating,
+    ];
+
+    if (!$end) {
+      $element[$id_prefix . '_area']['#weight'] = -2000;
+      $element[$id_prefix . '_area']['#attributes']['class'][] = 'first-button';
+    }
+
+    $element[$id_prefix . '_area']['add_more'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('+ Add'),
+      '#name' => strtr($id_prefix, '-', '_') . '_add_modal',
+      '#attributes' => [
+        'class' => [
+          'paragraph-type-add-modal-button',
+          'button--small',
+          'js-show',
+        ],
+      ],
+      '#ajax' => [
+        'url' => Url::fromRoute(
+          'paragraphs.paragraphs_modal_controller', [
+            'field_config' => implode('.', [
+              $items->getEntity()->getEntityTypeId(),
+              $items->getEntity()->bundle(),
+              $this->fieldDefinition->getName(),
+            ]),
+            'uuid' => $this->uuid,
+            'id_prefix' => $id_prefix,
+            'position' => $end ? $element['#weight'] + 1 : $element['#weight'],
+          ]
+        ),
+      ],
+    ];
+    $element['#attached']['library'][] = 'paragraphs/drupal.paragraphs.modal';
   }
 
   public function getAllowedTypes() {
@@ -906,6 +934,15 @@ class ParagraphsWidget extends WidgetBase {
 
     if (($this->realItemCount < $cardinality || $cardinality == FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED) && !$form_state->isProgrammed() && !$this->isTranslating) {
       $elements['add_more'] = $this->buildAddActions();
+      if ($this->getSetting('add_mode') == 'modal') {
+        if (!$this->realItemCount) {
+          $elements['#weight'] = 0;
+          $this->buildInBetweenAddButton($elements, 'first-button', $items);
+          $elements['first-button_area']['#attributes']['class'][] = 'no-paragraphs';
+        }
+        $elements['add_more']['#type'] = 'container';
+        $elements['add_more']['#attributes']['class'][] = 'js-hide';
+      }
     }
 
     $elements['#attached']['library'][] = 'paragraphs/drupal.paragraphs.widget';

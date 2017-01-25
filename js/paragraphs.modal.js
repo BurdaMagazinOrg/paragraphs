@@ -46,7 +46,7 @@
 
               Drupal.modalAddParagraphs.setValues({
                 add_more_select: config['type'],
-                add_more_delta: parseInt(config['position'], 10) + 1
+                add_more_delta: parseInt(config['position'], 10)
               });
             }
           }

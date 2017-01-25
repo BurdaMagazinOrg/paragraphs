@@ -116,6 +116,15 @@
   height: 30px;
 }
 
+.js .paragraph-type-add-modal.first-button {
+  margin-top: -32px;
+  margin-bottom: -20px;
+}
+.js .paragraph-type-add-modal.no-paragraphs {
+  margin-bottom: -1em;
+
+}
+
 .js .paragraph-type-add-modal-button {
   display: inline-block;
   margin: 0 auto;

@@ -66,7 +66,7 @@
 
           // TODO: get config from drupalSettings
           // Global data for dialog template.
-          var config = {title: 'Title 123', delta: 1};
+          var config = {title: 'Add paragraph', delta: 1};
 
           // Get types from ComboBox.
           var $typeComboBox;

@@ -1186,15 +1186,15 @@ class ParagraphsWidget extends WidgetBase {
     // Clean form_state.
     $user_input = $user_input_save = $form_state->getUserInput();
 
-    unset($user_input['field_paragraphs']['add_more']);
-    usort($user_input['field_paragraphs'], $sorting);
-    $user_input['field_paragraphs']['add_more'] = $user_input_save['field_paragraphs'];
+    unset($user_input[$field_name]['add_more']);
+    usort($user_input[$field_name], $sorting);
+    $user_input[$field_name]['add_more'] = $user_input_save[$field_name];
     $user_input_save = $user_input;
 
-    unset($user_input['field_paragraphs'][$position]);
+    unset($user_input[$field_name][$position]);
     for ($delta = $position; $delta < $widget_state['items_count'] - 1; $delta++) {
-      $user_input['field_paragraphs'][$delta + 1] = $user_input_save['field_paragraphs'][$delta];
-      $user_input['field_paragraphs'][$delta + 1]['_weight']++;
+      $user_input[$field_name][$delta + 1] = $user_input_save[$field_name][$delta];
+      $user_input[$field_name][$delta + 1]['_weight']++;
     }
     $form_state->setUserInput($user_input);
 

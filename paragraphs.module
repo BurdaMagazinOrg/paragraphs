@@ -59,6 +59,11 @@ function paragraphs_theme() {
     'paragraphs_dropbutton_wrapper' => array(
       'variables' => array('children' => NULL),
     ),
+    'paragraphs_add_dialog' => [
+      'variables' => [],
+      'template' => 'paragraphs-add-dialog',
+//      'render element' => 'elements',
+    ],
   );
 }
 

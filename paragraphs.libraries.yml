@@ -20,6 +20,9 @@ drupal.paragraphs.widget:
 drupal.paragraphs.modal:
   js:
     js/paragraphs.modal.js: {}
+  css:
+    theme:
+      css/paragraphs.modal.css: {}
   dependencies:
     - core/drupal.dialog.ajax
     - core/jquery.once

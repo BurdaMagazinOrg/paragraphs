@@ -650,10 +650,7 @@ class ParagraphsWidget extends WidgetBase {
       $widget_state['paragraphs'][$delta]['mode'] = $item_mode;
 
       if ($this->getSetting('add_mode') == 'modal') {
-        if ($delta == 0) {
-          $this->buildInBetweenAddButton($element, $id_prefix, $items, FALSE);
-        }
-        $this->buildInBetweenAddButton($element, $id_prefix, $items);
+        $this->buildInBetweenAddButton($element, $id_prefix);
       }
 
       static::setWidgetState($parents, $field_name, $form_state, $widget_state);
@@ -677,13 +674,9 @@ class ParagraphsWidget extends WidgetBase {
    * @param bool $end
    *   Is add button before or after the paragraph element.
    */
-  protected function buildInBetweenAddButton(array &$element, $id_prefix, FieldItemListInterface $items, $end = TRUE) {
+  protected function buildInBetweenAddButton(array &$element, $id_prefix) {
     if (empty($this->uuid)) {
       $this->uuid = \Drupal::service('uuid')->generate();
-    }
-
-    if (!$end) {
-      $id_prefix .= '_beginning';
     }
 
     $element[$id_prefix . '_area'] = [
@@ -691,15 +684,12 @@ class ParagraphsWidget extends WidgetBase {
       '#attributes' => [
         'class' => [
           'paragraph-type-add-modal',
+          'first-button',
         ],
       ],
       '#access' => !$this->isTranslating,
+      '#weight' => -2000,
     ];
-
-    if (!$end) {
-      $element[$id_prefix . '_area']['#weight'] = -2000;
-      $element[$id_prefix . '_area']['#attributes']['class'][] = 'first-button';
-    }
 
     $element[$id_prefix . '_area']['add_more'] = [
       '#type' => 'submit',
@@ -712,21 +702,8 @@ class ParagraphsWidget extends WidgetBase {
           'js-show',
         ],
       ],
-      '#ajax' => [
-        'url' => Url::fromRoute(
-          'paragraphs.paragraphs_modal_controller', [
-            'field_config' => implode('.', [
-              $items->getEntity()->getEntityTypeId(),
-              $items->getEntity()->bundle(),
-              $this->fieldDefinition->getName(),
-            ]),
-            'uuid' => $this->uuid,
-            'id_prefix' => $id_prefix,
-            'position' => $end ? $element['#weight'] + 1 : $element['#weight'],
-          ]
-        ),
-      ],
     ];
+
     $element['#attached']['library'][] = 'paragraphs/drupal.paragraphs.modal';
   }
 
@@ -934,15 +911,6 @@ class ParagraphsWidget extends WidgetBase {
 
     if (($this->realItemCount < $cardinality || $cardinality == FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED) && !$form_state->isProgrammed() && !$this->isTranslating) {
       $elements['add_more'] = $this->buildAddActions();
-      if ($this->getSetting('add_mode') == 'modal') {
-        if (!$this->realItemCount) {
-          $elements['#weight'] = 0;
-          $this->buildInBetweenAddButton($elements, 'first-button', $items);
-          $elements['first-button_area']['#attributes']['class'][] = 'no-paragraphs';
-        }
-        $elements['add_more']['#type'] = 'container';
-        $elements['add_more']['#attributes']['class'][] = 'js-hide';
-      }
     }
 
     $elements['#attached']['library'][] = 'paragraphs/drupal.paragraphs.widget';
@@ -1093,12 +1061,23 @@ class ParagraphsWidget extends WidgetBase {
     $field_name = $this->fieldDefinition->getName();
     $title = $this->fieldDefinition->getLabel();
 
-    $add_more_elements['add_more_delta'] = [
+    $add_more_elements = [];
+
+    // Add button in case of in between add buttons.
+    if ($this->getSetting('add_mode') == 'modal') {
+      $this->buildInBetweenAddButton($add_more_elements, 'first-button', NULL);
+
+      // Append template for modal add paragraph dialog.
+      $add_more_elements['paragraphs_add_dialog_template'] = $this->getModalAddDialogTemplate();
+    }
+
+    // Selection form elements.
+    $selection_form_elements['add_more_delta'] = [
       '#type' => 'hidden',
       '#title' => 'Delta',
     ];
 
-    $add_more_elements['add_more_select'] = [
+    $selection_form_elements['add_more_select'] = [
       '#type' => 'select',
       '#options' => $this->getAccessibleOptions(),
       '#title' => $this->t('@title type', ['@title' => $this->getSetting('title')]),
@@ -1106,12 +1085,11 @@ class ParagraphsWidget extends WidgetBase {
     ];
 
     $text = $this->t('Add @title', ['@title' => $this->getSetting('title')]);
-
     if ($this->realItemCount > 0) {
       $text = $this->t('Add another @title', ['@title' => $this->getSetting('title')]);
     }
 
-    $add_more_elements['add_more_button'] = [
+    $selection_form_elements['add_more_button'] = [
       '#type' => 'submit',
       '#name' => strtr($this->fieldIdPrefix, '-', '_') . '_add_more',
       '#value' => $text,
@@ -1124,8 +1102,12 @@ class ParagraphsWidget extends WidgetBase {
         'effect' => 'fade',
       ],
     ];
+    $selection_form_elements['add_more_button']['#suffix'] = $this->t(' to %type', ['%type' => $title]);
 
-    $add_more_elements['add_more_button']['#suffix'] = $this->t(' to %type', ['%type' => $title]);
+    $add_more_elements['selection_form'] = $selection_form_elements;
+    $add_more_elements['selection_form']['#type'] = 'container';
+    $add_more_elements['selection_form']['#attributes']['class'][] = 'js-hide';
+
     return $add_more_elements;
   }
 
@@ -1135,7 +1117,7 @@ class ParagraphsWidget extends WidgetBase {
   public static function addMoreAjax(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
     // Go one level up in the form, to the widgets container.
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -3));
 
     // Add a DIV around the delta receiving the Ajax effect.
     $delta = $element['#max_delta'];
@@ -1152,7 +1134,7 @@ class ParagraphsWidget extends WidgetBase {
     $button = $form_state->getTriggeringElement();
 
     // Go one level up in the form, to the widgets container.
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -3));
     $field_name = $element['#field_name'];
     $parents = $element['#field_parents'];
 
@@ -1169,9 +1151,9 @@ class ParagraphsWidget extends WidgetBase {
       $widget_state['selected_bundle'] = $button['#bundle_machine_name'];
     }
     else {
-      $widget_state['selected_bundle'] = $element['add_more']['add_more_select']['#value'];
-      if ($element['add_more']['add_more_delta']['#value'] !== "") {
-        $position = $element['add_more']['add_more_delta']['#value'];
+      $widget_state['selected_bundle'] = $element['add_more']['selection_form']['add_more_select']['#value'];
+      if ($element['add_more']['selection_form']['add_more_delta']['#value'] !== "") {
+        $position = $element['add_more']['selection_form']['add_more_delta']['#value'];
       }
     }
 
@@ -1525,6 +1507,21 @@ class ParagraphsWidget extends WidgetBase {
     }
     $collapsed_summary_text = implode(', ', $summary);
     return strip_tags($collapsed_summary_text);
+  }
+
+  /**
+   * Returns render array for template of add paragraph modal dialog.
+   *
+   * @return array
+   *   Render array.
+   */
+  protected function getModalAddDialogTemplate() {
+    return [
+      '#theme' => 'paragraphs_add_dialog',
+      '#attached' => [
+        'library' => ['paragraphs/drupal.paragraphs.modal'],
+      ],
+    ];
   }
 
 }

@@ -17,33 +17,6 @@
   };
 
   /**
-   * Add behaviour to modal dialog paragraph type buttons.
-   *
-   * @type {Object}
-   */
-  Drupal.behaviors.modalButtonAction = {
-    attach: function (context, settings) {
-      $('.paragraphs-add-type-trigger-element', context)
-        .once('add-click-handler')
-        .on('click', function (event) {
-          var $this = $(this);
-
-          // Stop default execution of click event.
-          event.preventDefault();
-          event.stopPropagation();
-
-          Drupal.modalAddParagraphs.setValues({
-            add_more_select: $this.attr('data-type'),
-            add_more_delta: $this.attr('data-delta')
-          });
-
-          // Close dialog afterwards.
-          $this.closest('div.ui-dialog-content').dialog('close');
-        });
-    }
-  };
-
-  /**
    * Click handler for "+ Add" button between paragraphs.
    *
    * @type {Object}
@@ -64,25 +37,28 @@
           var config = {title: 'Add paragraph', delta: 1};
 
           // Get types from ComboBox.
-          var $typeComboBox;
+          var $addMoreWrapper;
           if ($button.attr('name') === 'first_button_add_modal') {
             // Case for last button in list (of for empty list).
-            $typeComboBox = $button
+            $addMoreWrapper = $button
               .parent()
               .siblings('.js-hide')
-              .find('[name$="[add_more_select]"]');
+              .parent();
 
             config.delta = '';
           }
           else {
             // For button between paragraphs.
-            $typeComboBox = $button
+            $addMoreWrapper = $button
               .closest('table')
               .next()
-              .find('[name$="[add_more_select]"]');
+              .children('.js-hide')
+              .parent();
 
             config.delta = $button.closest('tr').index();
           }
+
+          var $typeComboBox = $addMoreWrapper.find('[name$="[add_more_select]"]');
 
           var paragraphTypes = [];
           $typeComboBox.find('option').each(function (index, optionElement) {
@@ -96,7 +72,7 @@
             );
           });
 
-          Drupal.modalAddParagraphs.openDialog(config, paragraphTypes);
+          Drupal.modalAddParagraphs.openDialog($addMoreWrapper, config, paragraphTypes);
         });
     }
   };
@@ -108,7 +84,7 @@
    */
   Drupal.modalAddParagraphs = {};
 
-  Drupal.modalAddParagraphs.openDialog = function (config, types) {
+  Drupal.modalAddParagraphs.openDialog = function ($context, config, types) {
 
     // Method to apply data over template element.
     var applyData = function (data, $templateElement) {
@@ -133,7 +109,7 @@
     };
 
     // Get dialog template and apply data on it.
-    var $dialogTemplate = $('.paragraphs-add-dialog-template');
+    var $dialogTemplate = $('.paragraphs-add-dialog-template', $context);
 
     var $dialog = $dialogTemplate.clone()
       .removeClass('paragraphs-add-dialog-template')
@@ -169,19 +145,40 @@
       }
     });
 
-    // Attach behaviours to dialog.
-    Drupal.behaviors.modalButtonAction.attach($dialog);
+    // Attach behaviours to dialog action triggering elements.
+    $('.paragraphs-add-type-trigger-element', $dialog)
+      .once('add-click-handler')
+      .on('click', function (event) {
+        var $this = $(this);
+
+        // Stop default execution of click event.
+        event.preventDefault();
+        event.stopPropagation();
+
+        Drupal.modalAddParagraphs.setValues(
+          $context,
+          {
+            add_more_select: $this.attr('data-type'),
+            add_more_delta: $this.attr('data-delta')
+          }
+        );
+
+        // Close dialog afterwards.
+        $this.closest('div.ui-dialog-content').dialog('close');
+      });
   };
 
   /**
    * Method to set hidden fields and trigger adding of paragraph.
    *
+   * @param {Object} $context
+   *   Jquery object containing element where form for submitting exists.
    * @param {Object} options
    *   Object with key value pair, where key is name of field that should be set
    *   and value is value for that field.
    */
-  Drupal.modalAddParagraphs.setValues = function (options) {
-    var $submitButton = $('.js-hide input[name$="_add_more"]');
+  Drupal.modalAddParagraphs.setValues = function ($context, options) {
+    var $submitButton = $('.js-hide input[name$="_add_more"]', $context);
     var $wrapper = $submitButton.parent();
 
     // Set all field values defined in otptions.

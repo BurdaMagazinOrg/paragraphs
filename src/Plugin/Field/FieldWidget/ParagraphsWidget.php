@@ -664,16 +664,12 @@ class ParagraphsWidget extends WidgetBase {
   }
 
   /**
-   * Builds an add paragraph button betwenn paragraphs.
+   * Builds an add paragraph button between paragraphs for opening of modal.
    *
    * @param array $element
    *   Render element.
    * @param string $id_prefix
    *   Prefix.
-   * @param FieldItemListInterface $items
-   *   The paragraphs items.
-   * @param bool $end
-   *   Is add button before or after the paragraph element.
    */
   protected function buildInBetweenAddButton(array &$element, $id_prefix) {
     if (empty($this->uuid)) {
@@ -958,7 +954,7 @@ class ParagraphsWidget extends WidgetBase {
         ];
       }
 
-      return $add_more_elements ;
+      return $add_more_elements;
     }
 
     if ($this->getSetting('add_mode') == 'button' || $this->getSetting('add_mode') == 'dropdown') {
@@ -1064,9 +1060,9 @@ class ParagraphsWidget extends WidgetBase {
 
     $add_more_elements = [];
 
-    // Add button in case of in between add buttons.
+    // Add button at end of list, when modal dialog is used to add paragraphs.
     if ($this->getSetting('add_mode') == 'modal') {
-      $this->buildInBetweenAddButton($add_more_elements, 'first-button', NULL);
+      $this->buildInBetweenAddButton($add_more_elements, 'first-button');
 
       // Append template for modal add paragraph dialog.
       $add_more_elements['paragraphs_add_dialog_template'] = $this->getModalAddDialogTemplate();
